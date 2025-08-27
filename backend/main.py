@@ -1,16 +1,18 @@
-
 from fastapi import FastAPI
 import firebase_admin
-from firebase_admin import firestore, auth 
+from firebase_admin import credentials, firestore, auth # Make sure to import credentials
 
-firebase_admin.initialize_app()
+# ---  Initialization for LOCAL DEVELOPMENT ---
+# Only for testing locally.
+# Replace 'path/to/your/serviceAccountKey.json' with actual path.
+cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+# --- End LOCAL DEVELOPMENT specific configuration ---
 
 db = firestore.client()
-auth_sdk = auth 
-
+auth_sdk = auth
 
 app = FastAPI()
-
 
 @app.get("/hello-firestore")
 async def hello_firestore():

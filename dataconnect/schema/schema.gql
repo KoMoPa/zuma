@@ -1,0 +1,63 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  bio: String
+  gender: String
+  age: Int
+  interests: [String]
+}
+
+type Group @table {
+  name: String!
+  createdAt: Timestamp!
+  leader: User
+  description: String
+  photoUrl: String
+  preferredActivities: [String]
+}
+
+type GroupMember @table(key: ["group", "member"]) {
+  group: Group!
+  member: User!
+  joinedAt: Timestamp!
+  role: String
+}
+
+type Location @table {
+  name: String!
+  address: String
+  latitude: Float
+  longitude: Float
+  type: String
+}
+
+type Event @table {
+  name: String!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  location: Location!
+  description: String
+  photoUrl: String
+  isPublic: Boolean
+}
+
+type GroupInterest @table(key: ["sourceGroup", "targetGroup"]) {
+  sourceGroup: Group!
+  targetGroup: Group!
+  status: String! # "pending", "accepted", "declined"
+  createdAt: Timestamp!
+  message: String
+}
+
+type Meetup @table {
+  group1: Group!
+  group2: Group!
+  proposedAt: Timestamp!
+  status: String! # "proposed", "confirmed", "cancelled", "completed"
+  location: Location
+  event: Event
+  proposedTime: Timestamp
+  notes: String
+}

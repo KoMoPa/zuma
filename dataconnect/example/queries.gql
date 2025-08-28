@@ -1,0 +1,36 @@
+mutation InsertNewUser @auth(level: USER) {
+  user_insert(data: {
+    id_expr: "uuidV4()",
+    displayName: "New User",
+    email: "newuser@example.com",
+    createdAt_expr: "request.time"
+  })
+}
+
+query ListPublicEvents @auth(level: PUBLIC) {
+  events(where: {isPublic: {eq: true}}) {
+    id
+    name
+    description
+    startTime
+    endTime
+  }
+}
+
+mutation UpdateGroupDescription($groupId: UUID!, $newDescription: String!) @auth(level: USER) {
+  group_update(
+    id: $groupId,
+    data: {
+      description: $newDescription
+    }
+  )
+}
+
+query ListGroupsCreatedByUser @auth(level: USER) {
+  groups(where: {leaderId: {eq_expr: "auth.uid"}}) {
+    id
+    name
+    description
+    createdAt
+  }
+}

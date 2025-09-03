@@ -4,7 +4,6 @@ from datetime import date
 
 class User(BaseModel):
    
-
     # Core identification
     id: Optional[str] = None  
 
@@ -20,9 +19,6 @@ class User(BaseModel):
     birth_date: date  # Used to calculate age
     
     # Dating app-specific information
-    bio: Optional[str] = None
-    interests: list[str] = [] # User's hobbies and interests for matching
-    ideal_match_traits: list[str] = [] # What the user is looking for in a group/person
     is_looking_for_group: bool = True # Status for matching with groups
     current_location: Optional[dict] = None # Will store location data (e.g., {'latitude': 0, 'longitude': 0})
 

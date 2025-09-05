@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 from fastapi import FastAPI
-from user_routes import router  # include 'routes.' if I move into a routes folder
+from routes.user_routes import router  
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 import os # Import os for checking file existence

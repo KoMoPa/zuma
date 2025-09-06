@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from backend.main import app
+
 
 client = TestClient(app)
 
@@ -17,8 +18,8 @@ def test_register_user_success():
     # Check response
     assert response.status_code == 201 or response.status_code == 200
     data = response.json()
-    assert "message" in data
-    assert "id" in data or "uid" in data  # depending on how you return user info
+    assert "email" in data
+    assert "uid" in data
 
 def test_register_user_missing_field():
     payload = {
@@ -28,5 +29,5 @@ def test_register_user_missing_field():
 
     response = client.post("/api/users/register", json=payload)
 
-    # Expect validation error from FastAPI
-    assert response.status_code == 422
+    # Expect 400 Bad Request from API for missing field
+    assert response.status_code == 400

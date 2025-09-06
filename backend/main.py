@@ -1,47 +1,51 @@
+from dotenv import load_dotenv
+load_dotenv()
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+
 from fastapi import FastAPI
-from routes.user_routes import router  
+from backend.routes.user_routes import router
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
-import os # Import os for checking file existence
+import os
 
-# --- Initialization for LOCAL DEVELOPMENT ---
+# --- Detect if we're running in emulator/test mode ---
+USE_EMULATOR = os.getenv("FIREBASE_EMULATOR") == "true"
+
+# --- Configure emulator host/ports ---
+if USE_EMULATOR:
+    os.environ["FIRESTORE_EMULATOR_HOST"] = os.getenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
+    os.environ["FIREBASE_AUTH_EMULATOR_HOST"] = os.getenv("FIREBASE_AUTH_EMULATOR_HOST", "localhost:9099")
+    print("⚡ Using Firebase Emulators: Firestore + Auth")
+
+# --- Path to service account key for real Firebase (not used in tests) ---
 SERVICE_ACCOUNT_KEY_PATH = "./keys/zuma-1776b-firebase-adminsdk-fbsvc-dedc84521d.json"
 
-print("--- Starting Firebase App Initialization Check ---")
-
-if not os.path.exists(SERVICE_ACCOUNT_KEY_PATH):
-    print(f"ERROR: Service account key file not found at: {SERVICE_ACCOUNT_KEY_PATH}")
-    print("Please ensure the path is correct and the file exists.")
-    # You might want to exit here in a real app if the key is missing
-    # exit(1)
-else:
-    print(f"Service account key file found at: {SERVICE_ACCOUNT_KEY_PATH}")
-
-
+# --- Initialize Firebase Admin SDK ---
 try:
-    cred = credentials.Certificate(SERVICE_ACCOUNT_KEY_PATH)
-    firebase_admin.initialize_app(cred)
-    print("Firebase Admin SDK initialized successfully.")
-    # Check the project ID the SDK is initialized with
-    print(f"SDK initialized for project ID: {firebase_admin.get_app().project_id}")
+    if USE_EMULATOR:
+        # Emulator mode: no credentials needed
+        firebase_admin.initialize_app(options={"projectId": "demo-project"})
+        print("Firebase Admin SDK initialized using emulator.")
+    else:
+        # Real Firebase: only if not testing
+        if not os.path.exists(SERVICE_ACCOUNT_KEY_PATH):
+            raise FileNotFoundError(f"Service account key file not found at {SERVICE_ACCOUNT_KEY_PATH}")
+        cred = credentials.Certificate(SERVICE_ACCOUNT_KEY_PATH)
+        firebase_admin.initialize_app(cred)
+        print(f"Firebase Admin SDK initialized successfully for project {firebase_admin.get_app().project_id}")
 except Exception as e:
     print(f"ERROR: Failed to initialize Firebase Admin SDK: {e}")
-    print("This could be due to an invalid key file or other configuration issues.")
-    # exit(1) # You might want to exit here if initialization fails
+    if not USE_EMULATOR:
+        raise e  # Only fail hard if not in emulator mode
 
-
+# --- Firestore & Auth clients ---
 db = firestore.client()
-# Note: The firestore.client() call connects to the *default* Firestore instance.
-# If you created your 'settings/general' in 'northamerica-northeast2', you'd need to specify it.
-# However, usually the default is where you'd put general app settings.
-print(f"Firestore client obtained. It will connect to the default Firestore database.")
 auth_sdk = auth
 
-print("--- Firebase App Initialization Check Complete ---")
+print("--- Firebase App Initialization Complete ---")
 
-
+# --- FastAPI setup ---
 app = FastAPI()
 app.include_router(router, prefix="/api/users")
 
@@ -51,19 +55,14 @@ async def hello_firestore():
     print("\n--- /hello-firestore endpoint hit ---")
     doc_ref = db.collection('settings').document('general')
     print(f"Attempting to get document: Collection 'settings', Document 'general'")
-
     try:
-        doc = doc_ref.get() # This is where the actual network call to Firestore happens
-        print(f"Firestore get() call completed.")
-
+        doc = doc_ref.get()
         if doc.exists:
-            print(f"Document 'settings/general' found! Data: {doc.to_dict()}")
+            print(f"Document found! Data: {doc.to_dict()}")
             return {"message": "Settings found!", "data": doc.to_dict()}
         else:
-            print(f"Document 'settings/general' DOES NOT EXIST according to Firestore.")
-            print("Possible reasons: Mismatch in project, typo in collection/document name, or document not actually created.")
+            print("Document DOES NOT EXIST.")
             return {"message": "No settings document found."}
     except Exception as e:
-        print(f"ERROR: An error occurred while fetching the document: {e}")
+        print(f"ERROR fetching document: {e}")
         return {"message": f"Error fetching settings: {e}"}
-

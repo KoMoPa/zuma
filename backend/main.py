@@ -4,7 +4,8 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from fastapi import FastAPI
-from backend.routes.user_routes import router
+from backend.routes.user_routes import router as user_router
+from backend.routes.group_routes import router as group_router
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 import os
@@ -47,7 +48,8 @@ print("--- Firebase App Initialization Complete ---")
 
 # --- FastAPI setup ---
 app = FastAPI()
-app.include_router(router, prefix="/api/users")
+app.include_router(user_router, prefix="/api/users")
+app.include_router(group_router, prefix="/api/groups")
 
 
 @app.get("/hello-firestore")
